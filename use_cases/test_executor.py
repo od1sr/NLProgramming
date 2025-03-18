@@ -1,5 +1,5 @@
-from executor import Executor
-from config import Language
+from src.executor import Executor
+from src.config import Language
 import subprocess
 
 if __name__ == "__main__":

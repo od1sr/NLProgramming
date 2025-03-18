@@ -1,11 +1,11 @@
 import subprocess
 import re
 from pathlib import Path
-from config import GEMINI_API_KEY, Language, proxy, compillable
+from .config import GEMINI_API_KEY, Language, proxy, compillable
 import requests
 import json
 import platform
-import exceptions as exc
+from . import exceptions as exc
 from loguru import logger
 
 class Executor:
