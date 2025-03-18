@@ -1,11 +1,11 @@
 from executor import Executor
 from config import Language
-
+import subprocess
 
 if __name__ == "__main__":
-    task = "Напиши программу, которая пишет 'Hello, World!' в консоль."
-    language = Language.PYTHON
-    save_path = "generated_code"
+    task = "Напиши простейшую 3d рей-кастинг игру в консоли."
+    language = Language.CPP
+    save_path = "game"
     executor = Executor(task, language, save_path)
     executor.execute()
-    print(executor.code)
+    

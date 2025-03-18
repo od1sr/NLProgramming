@@ -1,11 +1,12 @@
-
-import os
 import subprocess
 import re
 from pathlib import Path
-import google.generativeai as genai
-from urllib3 import ProxyManager, make_headers
-from config import GEMINI_API_KEY, PROXY_URL, PROXY_LOGIN, Language
+from config import GEMINI_API_KEY, Language, proxy, compillable
+import requests
+import json
+import platform
+import exceptions as exc
+from loguru import logger
 
 class Executor:
     '''
@@ -23,107 +24,166 @@ class Executor:
         self.task = task
         self.language = language
         self.save_path = Path(save_path)
-        self.__code = None
-        self.__dependencies = []
+        self.__code = self.__full_response = None
 
         
     @property
     def code(self):
+        '''The program code'''
         return self.__code
 
+    @property
+    def full_response(self):
+        '''The full response from Gemini including code'''
+        return self.__full_response
+    
     def execute(self):
-        # Get code from Gemini
-        model = self._setup_gemini()
-        prompt = f"{self.task}\n\nInclude required dependencies. The program should be written on {self.language.value}."
+        self.__full_response = self._send_prompt_to_gemini()
         
-        print('sending request to Gemini...')
-        response = model.generate_content(prompt).text
-        print('response received')
-        
-        # Extract code and dependencies
-        self._extract_code_and_dependecies(response)
-        
-        # Install dependencies
-        self._install_dependencies()
-        
+        dependecies = self._extract_code_and_commands()
+
         # Save code to file
-        file_path = self._save_code()
+        self._save_code()
         
-        # Compile if needed
-        executable_path = self._compile_code(file_path)
-        
-        # Run the code
-        self._run_code(executable_path)
-        
-    def _setup_gemini(self):        
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-2.0-pro-exp-02-05')
+        self._install_dependecies(dependecies)
 
-        return model
+        self._execute_program()
+
+    def _send_prompt_to_gemini(self):
+
+        prompt = f"{self.task}\n\nПрограмма должна быть написана на {self.language.value}. " + \
+            ("Перечисли все комманды, которые необходимо исполнить в терминале, чтобы УСТАНОВИТЬ " \
+                "для неё необходимые зависимости."\
+                if self.language in (Language.PYTHON, Language.JAVASCRIPT) else ''\
+            ) + \
+            f"Я использую {platform.system()} {platform.release()}. " \
+            "Не надо отправлять комманды для заполнения файла main, компиляции и запуска, я сам скопирую тот код, " \
+            "который ты пришлёшь, вставлю в файл и запущу. Не надо объяснять код. Просто отправь код и комманды для " \
+            "установки библиотек (если они есть). Код должен быть написан так, чтобы программа запустилась сразу без "\
+            "дополнительного редактирования. "
         
-    def _extract_code_and_dependecies(self, response: str) -> tuple:
-        '''Extract code block between  markers'''
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-pro-exp-02-05:generateContent?key="+\
+            GEMINI_API_KEY
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+        }
 
-        code_pattern = r".*?\n(.*?)"
-        code_match = re.search(code_pattern, response, re.DOTALL)
+        print('sending request to Gemini...')
+        try:
+            response = requests.post(url, headers=headers, json=payload, proxies=proxy, timeout=120)
+            response.raise_for_status()  # Проверка на ошибки HTTP
+        except requests.exceptions.ProxyError:
+            logger.opt(exception=True).error("Proxy error")
+            raise exc.NetworkError()
+        except requests.exceptions.RequestException:
+            logger.opt(exception=True).error("Request error")
+            raise exc.NetworkError()
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            logger.opt(exception=True).error("Response handling error")
+            raise exc.CantGetResponseFromAI()
 
+        self.__full_response = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        
+        if self.__full_response is None:
+            raise exc.CantGetResponseFromAI('Нихуя не получилось')
+
+        logger.info('Gemini responsed:\n' + self.__full_response)
+        
+        return self.__full_response
+    
+    def _extract_code_and_commands(self) -> list[str]:
+        '''Extract code block between markers'''
+
+        
+        # exctract code block
+        code_match = self._extract_code_blocks_from_text_with_regex(self.language.value)
         if code_match:
-            self.__code = code_match.group(1).strip()
+            self.__code = code_match[0].strip()
+            logger.info(self.__code)
         else:
-            self.__code = response
+            raise exc.CantExtractCode()
             
-        # Extract dependencies
-        dep_pattern = r"(.*?)(?=|\Z)"
-        dep_match = re.search(dep_pattern, response, re.DOTALL)
+        # Extract commands to start program and install dependecies
+        dependecies = self._extract_code_blocks_from_text_with_regex('bash')
 
-        if dep_match:
-            deps = dep_match.group(1).strip().split('\n')
-            self.__dependencies = [d.strip('- ') for d in deps if d.strip()]
-            
+        if dependecies:
+            dependecies = [
+                i.strip().split('#')[0] # split('#')[0] is for getting rid of comments
+                    for i in '\n'.join(dependecies).split('\n')
+            ]
+            dependecies = [i for i in dependecies if i]
+            logger.info(f'{dependecies}')
 
-    def _install_dependencies(self):
-        for dep in self.__dependencies:
-            try:
-                if os.name == 'posix':
-                    subprocess.run(dep, check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to install {dep}: {e}")
+        return dependecies
+
+    def _extract_code_blocks_from_text_with_regex(self, language: str) -> list[str]:
+        # convert language name to markdown format
+        lang = language.replace('+', 'p').replace('#', 'sharp')
+        if lang == Language.JAVASCRIPT.value:
+            lang = 'javascript|js'
+
+        pattern = r"^```(?:" + f'{lang}|{re.escape(language)}' + r")\n([\s\S]*?)```$"
+
+        return re.findall(pattern, self.__full_response, re.DOTALL | re.IGNORECASE | re.MULTILINE)
 
     def _save_code(self):
         extension = {
             Language.PYTHON: '.py',
             Language.CPP: '.cpp',
-            Language.C: '.c'
+            Language.JAVASCRIPT: '.js',
         }.get(self.language, '.txt')
         
-        file_path = self.save_path / f"main{extension}"
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        self.save_path = self.save_path / f"main{extension}"
+        self.save_path.parent.mkdir(parents=True, exist_ok=True)
         
-        with open(file_path, 'w') as f:
+        with open(self.save_path, 'w') as f:
             f.write(self.code)
 
-        return file_path
+    def _install_dependecies(self, dependecies: list[str]):
+        for command in dependecies:
+            if not command:
+                continue
 
-    def _compile_code(self, file_path: Path):
-        if self.language == Language.CPP:
-            output_path = file_path.with_suffix('.exe' if os.name == 'nt' else '')
-            subprocess.run(['g++', str(file_path), '-o', str(output_path)], check=True)
-            return output_path
-        elif self.language == Language.JAVA:
-            subprocess.run(['javac', str(file_path)], check=True)
-            return file_path.with_suffix('.class')
-        elif self.language == Language.CS:
-            subprocess.run(['csc', str(file_path)], check=True)
-            return file_path.with_suffix('.exe')
-        
-        return file_path
-    
-    def _run_code(self, file_path: Path):
-        if self.language == Language.PYTHON:
-            subprocess.run(['python', str(file_path)], check=True)
-        elif self.language == Language.JAVASCRIPT:
-            subprocess.run(['node', str(file_path)], check=True)
-        elif self.language in [Language.CPP, Language.CS]:
-            subprocess.run([str(file_path)], check=True)
-        elif self.language.lower() == 'java':
-            subprocess.run(['java', file_path.stem], check=True)
+            try:
+                logger.info('RUNNING ' + command)
+                subprocess.run(command.split(), check=False)
+            except:
+                logger.opt(exception=True).error(f"Failed to execute {command}")
+
+    def _execute_program(self):
+        prog_path = ''
+        if self.language in compillable:
+            prog_path = "main"
+
+            prog_path += {
+                Language.CPP: '.exe' if platform.system() == "Windows" else '',
+            }.get(self.language)
+
+            prog_path = self.save_path.parent / prog_path
+
+            compille_command = {
+                Language.CPP: f'g++ -o {prog_path} {self.save_path}',
+            }
+
+            try:
+                logger.info('COMPILING...')
+                subprocess.run(compille_command[self.language].split(), check=False)
+            except:
+                logger.opt(exception=True).error(f"Failed to compile {self.language} {prog_path}")
+                raise exc.CantCompileProgram()
+        else:
+            prog_path = self.save_path
+
+        execute_command = {
+            Language.PYTHON: 'python3 {}',
+            Language.CPP: '{}',
+            Language.JAVASCRIPT: 'node {}',
+        }.get(self.language).format(prog_path)
+
+        try:
+            logger.info('EXECUTING ' + str(self.save_path))
+            subprocess.run(execute_command.split(), check=False)
+        except:
+            logger.opt(exception=True).error(f"Failed to execute {self.save_path}")
+            raise exc.CantRunProgram()
