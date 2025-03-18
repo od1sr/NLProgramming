@@ -3,9 +3,14 @@ from config import Language
 import subprocess
 
 if __name__ == "__main__":
-    task = "Напиши простейшую нейросеть, которая получает слово и возвращает рифму."
+    task = "Напиши простейшую нейросеть, которая получает получает "
+    "последовательность из 5 чисел, "
+    "находит закономерность и пишет в консоль ещё 5 вариантов."
     language = Language.PYTHON
-    save_path = "game"
-    executor = Executor(task, language, save_path)
+    save_path = "generated_code"
+    executor = Executor(task, language)
     executor.generate()
+    executor.install_dependecies()
+    executor.save_code(save_path)
     executor.execute_program()
+
