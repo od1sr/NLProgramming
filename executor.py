@@ -37,7 +37,7 @@ class Executor:
         '''The full response from Gemini including code'''
         return self.__full_response
     
-    def execute(self):
+    def generate(self):
         self.__full_response = self._send_prompt_to_gemini()
         
         dependecies = self._extract_code_and_commands()
@@ -47,7 +47,7 @@ class Executor:
         
         self._install_dependecies(dependecies)
 
-        self._execute_program()
+        #self.execute_program()
 
     def _send_prompt_to_gemini(self):
 
@@ -151,7 +151,7 @@ class Executor:
             except:
                 logger.opt(exception=True).error(f"Failed to execute {command}")
 
-    def _execute_program(self):
+    def execute_program(self):
         prog_path = ''
         if self.language in compillable:
             prog_path = "main"
