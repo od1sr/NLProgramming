@@ -41,6 +41,16 @@ class Executor:
         self.__code = self.__full_response = None
         self.__dependecies = None
 
+        self.__saved: bool = False
+
+    @property
+    def path(self) -> Path:
+        '''The path where the generated code will be saved'''
+        return self.__save_path
+
+    @property
+    def saved(self) -> bool:
+        return self.__saved
         
     @property
     def code(self) -> str:
@@ -79,6 +89,7 @@ class Executor:
             ) + \
             f"Я использую {platform.system()} {platform.release()}. " \
             "Не надо отправлять комманды для заполнения файла main, компиляции и запуска, я сам скопирую тот код, " \
+            "В коде не должно быть комментариев," \
             "который ты пришлёшь, вставлю в файл и запущу. Не надо объяснять код. Просто отправь код и комманды для " \
             "установки библиотек (если они есть). Код должен быть написан так, чтобы программа запустилась сразу без "\
             "дополнительного редактирования. "
@@ -98,8 +109,8 @@ class Executor:
             logger.opt(exception=True).error("Proxy error")
             raise exc.NetworkError()
         except requests.exceptions.RequestException:
-            logger.opt(exception=True).error("Request error")
-            raise exc.NetworkError()
+            logger.opt(exception=True).error("To Many Requests")
+            raise exc.ToManyRequests()
         except (KeyError, IndexError, json.JSONDecodeError) as e:
             logger.opt(exception=True).error("Response handling error")
             raise exc.CantGetResponseFromAI()
@@ -171,8 +182,9 @@ class Executor:
         self.__save_path = Path(path) / f"main{extension}"
         self.__save_path.parent.mkdir(parents=True, exist_ok=True)
         
-        with open(self.__save_path, 'w') as f:
+        with open(self.__save_path, 'w', encoding="UTF-8") as f:
             f.write(self.__code)
+            self.__saved = True
 
     def install_dependecies(self):
         for command in self.__dependecies:
@@ -185,7 +197,7 @@ class Executor:
             except:
                 logger.opt(exception=True).error(f"Failed to execute {command}")
 
-    def execute_program(self):
+    def build_program(self):
         prog_path = ''
         if self.language in compillable:
             prog_path = "main"
@@ -206,11 +218,13 @@ class Executor:
             except:
                 logger.opt(exception=True).error(f"Failed to compile {self.language} {prog_path}")
                 raise exc.CantCompileProgram()
-        else:
-            prog_path = self.__save_path
+            return prog_path
+        return self.__save_path
 
+    def execute_program(self):
+        prog_path = self.build_program()
         execute_command = {
-            Language.PYTHON: 'python3 {}',
+            Language.PYTHON: 'python {}',
             Language.CPP: '{}',
             Language.JAVASCRIPT: 'node {}',
         }.get(self.language).format(prog_path)

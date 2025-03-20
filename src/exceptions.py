@@ -15,3 +15,6 @@ class CantRunProgram(Exception):
 
 class CantCompileProgram(Exception):
     ...
+
+class ToManyRequests(Exception):
+    ...
