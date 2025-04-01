@@ -12,20 +12,7 @@ from loguru import logger
 
 from src.frontend.ui_elements import *
 
-COLORS = {
-    "background": "#F0F4F8",
-    "surface": "#FFFFFF",
-    "primary": "#89C2D9",
-    "secondary": "#FFA69E",
-    "text": "#2B2D42",
-    "text_muted": "#8D99AE",
-    "accent": "#C7D6E1",
-    "highlight": "#E2C044",
-    "pastel_red": "#FFB5B5",
-    "pastel_dark": "#4A5568",
-    "pastel_terminal": "#1D2B3C",
-    "pastel_terminal_text": "#E5E8EB"
-}
+
 
 wait_timer = 0
 def wait_timer_start(page: ft.Page, input_button: ft.IconButton, timer_text):
@@ -343,6 +330,9 @@ def main(page: ft.Page):
         except exceptions.ToManyRequests:
             error_handled = True
             warning.value = "Слишком много запросов подряд."
+        except exceptions.NetworkError:
+            error_handled = True
+            warning.value = "Отсуствует подключение к сети."
 
         if error_handled:
             warning_obj.visible = True
@@ -412,7 +402,8 @@ def main(page: ft.Page):
         right=20,
         top=20,
         bottom=20,
-        width=600
+        width=600,
+        
     )
 
     console_toggle_button = ft.IconButton(
