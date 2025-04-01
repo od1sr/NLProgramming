@@ -12,7 +12,10 @@ class OutputHandler(StringIO):
         super().__init__()
 
     def write(self, text: str):
-        #super().write(text)
+        super().write(text)
 
         self.__element.controls.append(ft.Text(text, color=COLORS["pastel_terminal_text"]))
         self.__page.update()
+
+    def fileno(self):
+        return None
