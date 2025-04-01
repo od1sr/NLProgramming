@@ -49,15 +49,7 @@ language_select_drop_box.value = 'Python'
 
 # UI FOR MESSAGE CART ========================================
 
-# Conent box for code
-code_content = ft.TextField(
-    '',
-    color=COLORS["text"],
-    text_size=14,
-    multiline=True
-)
-code_content.disabled = True
-code_content.visible = False
+
 
 # Content box for libs
 libs_content = ft.TextField(

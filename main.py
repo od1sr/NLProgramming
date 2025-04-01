@@ -12,6 +12,7 @@ from loguru import logger
 import subprocess
 from src.frontend.ui_elements import *
 from src.frontend.settings import REMOTE_SERVER
+from src.frontend.highlighter import highlight_python_code
 
 import socket
 
@@ -99,6 +100,11 @@ def main(page: ft.Page):
                 mc.pop(0)
         except: pass
 
+        # Conent box for code
+        code_content = ft.Text(
+            size=14,
+        )
+        
         
 
         
@@ -286,7 +292,7 @@ def main(page: ft.Page):
                 ft.Divider(height=1, color=COLORS["accent"]),
                 you_text,
                 ft.Divider(height=1, color=COLORS["accent"]),
-                code_content,
+                ft.Container(code_content),
                 libs_content,
                 ft.Row([
                     run_button,
@@ -329,14 +335,14 @@ def main(page: ft.Page):
             waiting_animation.visible = False
             generate_text.visible = False
             code_content.visible = True
-            code_content.value = ''
-            code_strokes = carts[cart_id].code.split('\n')
-            for i in range(len(code_strokes)):
+            spans = highlight_python_code(carts[cart_id].code)
+            for i in range(len(spans)):
                 sleep(uniform(0, 0.05))
-                code_content.value += code_strokes[i] + '\n'
-                #md.value += code_strokes[i] + '\n'
+                code_content.spans.insert(-1, spans[i])
+                
                 page.update()
                 messages_column.scroll_to(offset=messages_column.height, duration=3)
+            
 
             if carts[cart_id].language == Language.PYTHON:
                 python_build_button.visible = True
