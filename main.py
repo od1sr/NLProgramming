@@ -381,9 +381,12 @@ def main(page: ft.Page):
             page.update()
 
     internet_connection = ft.IconButton(
-        icon=ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4
+        icon=ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4,
+        bgcolor = COLORS["pastel_red"],
+        icon_color = COLORS["vivid_red"]
     )
     internet_connection.disable = True
+
 
     def check_internet_connection(page, internet_c):
         global INTERNET_CONECTED
@@ -393,9 +396,14 @@ def main(page: ft.Page):
             if not INTERNET_CONECTED:
                 internet_c.icon = ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4
                 internet_c.tooltip = "Не в сети"
+                internet_c.icon_color = COLORS["vivid_red"]
+                internet_c.bgcolor = COLORS["pastel_red"]
+                
             else:
                 internet_c.icon = ft.Icons.SIGNAL_WIFI_4_BAR
                 internet_c.tooltip = "В сети"
+                internet_c.icon_color = COLORS["vivid_green"]
+                internet_c.bgcolor = COLORS['pastel_green']
             page.update()
             
 
@@ -431,42 +439,37 @@ def main(page: ft.Page):
     )
 
     console = ft.ListView(expand=True, spacing=10, auto_scroll=True)
-    console.controls.append(ft.Text('Консоль', color=COLORS["pastel_terminal_text"]))
 
     out = OutputHandler(console, page)
     sys.stdout = sys.stderr = out
     logger.add(out)
     Executor.setDefaultOutStream(out)
     logger.info('Console configured!!!')
-    
 
-    console_container = ft.Container(
-        content=console,
-        expand=True,
-        border_radius=15,
-        border=ft.border.all(1.2, COLORS["accent"]),
-        bgcolor=COLORS["pastel_terminal"],
-        shadow=ft.BoxShadow(blur_radius=15, color=ft.colors.BLACK12),
-        padding=15,
-        offset=ft.transform.Offset(0, 0),
-        animate_offset=ft.Animation(200, "easeOutQuad"),
-        right=20,
-        top=20,
-        bottom=20,
-        width=600,
+    def close_console():
+        nonlocal IS_CONSOLE_VISIBLE
+        IS_CONSOLE_VISIBLE = False
         
-    )
+        if IS_CONSOLE_VISIBLE:
+            console_container.offset = ft.transform.Offset(0, 0)
+            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
+        else:
+            console_container.offset = ft.transform.Offset(1.1, 0)
+            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
+        
+        page.update()
 
-    console_toggle_button = ft.IconButton(
-        icon=ft.icons.CHEVRON_RIGHT,
-        icon_color=COLORS["pastel_terminal_text"],
-        bgcolor=COLORS["pastel_terminal"],
-        on_click=lambda e: toggle_console(e),
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
-        top=0,
-        right=0,
-        visible=True,
-        tooltip="Скрыть/Показать консоль"
+
+    resize_handle = ft.GestureDetector(
+        mouse_cursor=ft.MouseCursor.RESIZE_COLUMN,
+        drag_interval=10,
+        on_pan_update=lambda e: handle_resize(e),
+        content=ft.Container(
+            width=10,
+            height=30,
+            bgcolor=ft.colors.with_opacity(0.5, COLORS["pastel_terminal_text"]),
+            border_radius=5,
+        ),
     )
 
     def toggle_console(e):
@@ -475,44 +478,86 @@ def main(page: ft.Page):
         
         if IS_CONSOLE_VISIBLE:
             console_container.offset = ft.transform.Offset(0, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
+            console_open_button.offset = ft.transdorm(-1.1, 0)
+            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
         else:
             console_container.offset = ft.transform.Offset(1.1, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
+            console_open_button.offset = ft.transdorm(0, 0)
+            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
         
         page.update()
 
-    def open_console():
-        nonlocal IS_CONSOLE_VISIBLE
-        IS_CONSOLE_VISIBLE = True
-        
-        if IS_CONSOLE_VISIBLE:
-            console_container.offset = ft.transform.Offset(0, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
-        else:
-            console_container.offset = ft.transform.Offset(1.1, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
-        
-        page.update()
+    console_toggle_button = ft.IconButton(
+        icon=ft.icons.CHEVRON_LEFT,
+        icon_color=COLORS["pastel_terminal_text"],
+        bgcolor=COLORS["pastel_terminal"],
+        on_click=toggle_console,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)),
+        tooltip="Скрыть/Показать консоль"
+    )
 
-    def close_console():
-        nonlocal IS_CONSOLE_VISIBLE
-        IS_CONSOLE_VISIBLE = False
+    console_open_button = ft.TextButton(
+        "Консоль",
+        on_click=toggle_console,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=14), bgcolor=COLORS['pastel_terminal'], text_style=ft.TextStyle(color=COLORS["accent"])),
+        tooltip="Скрыть/Показать консоль",
+        animate_offset=ft.Animation(200, "easeOutQuad"),
+        offset=ft.transform.Offset(0, 0),
+    )
+    
+
+    console_container = ft.Container(
+        content=ft.Column([
+            ft.Row([
+                resize_handle,
+                ft.Text("Консоль", color=COLORS["pastel_terminal_text"], offset=[0.5, 0], size=18),
+                ft.Container(expand=True),
+                console_toggle_button,
+            ], spacing=0),
+            console
+        ]),
+        width=400,  # Начальная ширина
+        expand=True,
+        border_radius=15,
+        border=ft.border.all(1.2, COLORS["accent"]),
+        bgcolor=COLORS["pastel_terminal"],
+        shadow=ft.BoxShadow(blur_radius=15, color=ft.colors.BLACK12),
+        padding=15,
+        offset=ft.transform.Offset(0, 0),
+        animate_offset=ft.Animation(200, "easeOutQuad"),
+        right=0,
+        top=1,
+        bottom=1,
+    )
+
+    
+
+    
+
+
+    
+
+    def handle_resize(e):
+        # Минимальная и максимальная ширина консоли
+        min_width = 300
+        max_width = page.window_width - 100
         
-        if IS_CONSOLE_VISIBLE:
-            console_container.offset = ft.transform.Offset(0, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
-        else:
-            console_container.offset = ft.transform.Offset(1.1, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
+        # Вычисляем новую ширину
+        new_width = console_container.width - e.delta_x
+        new_width = max(min_width, min(new_width, max_width))
         
+        console_container.width = new_width
         page.update()
 
     page.add(
         ft.Stack(
             [
                 ft.Column([
-                    internet_connection,
+                    ft.Row([
+                        internet_connection, 
+                        ft.Container(expand=True),
+                        console_open_button
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     ft.Container(
                         content=messages_column,
                         expand=True,
@@ -531,8 +576,9 @@ def main(page: ft.Page):
                         padding=10
                     )
                 ], expand=True),
+                
                 console_container,
-                console_toggle_button
+                
             ],
             expand=True
         )
