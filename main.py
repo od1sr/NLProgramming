@@ -5,10 +5,10 @@ from random import uniform
 from src import exceptions
 from time import sleep
 import flet as ft
-
+from src.outputHandler import OutputHandler
 import os, sys
 import uuid
-
+from loguru import logger
 
 from src.frontend.ui_elements import *
 
@@ -393,6 +393,11 @@ def main(page: ft.Page):
 
     console = ft.ListView(expand=True, spacing=10, auto_scroll=True)
     console.controls.append(ft.Text('Консоль', color=COLORS["pastel_terminal_text"]))
+
+    out = OutputHandler(console, page)
+    logger.add(out)
+    logger.info('Console configured!!!')
+    
 
     console_container = ft.Container(
         content=console,
