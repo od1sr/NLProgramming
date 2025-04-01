@@ -392,10 +392,10 @@ def main(page: ft.Page):
             INTERNET_CONECTED = is_connected(REMOTE_SERVER)
             if not INTERNET_CONECTED:
                 internet_c.icon = ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4
-                internet_c.tooltype = "Не в сети"
+                internet_c.tooltip = "Не в сети"
             else:
                 internet_c.icon = ft.Icons.SIGNAL_WIFI_4_BAR
-                internet_c.tooltype = "В сети"
+                internet_c.tooltip = "В сети"
             page.update()
             
 
