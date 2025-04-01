@@ -7,6 +7,8 @@ import json
 import platform
 from . import exceptions as exc
 from loguru import logger
+from io import StringIO
+from typing import Generator
 
 class Executor:
     '''
@@ -27,6 +29,8 @@ class Executor:
     ```
     '''
 
+    __default_outstream: StringIO = None
+
     def __init__(self, task: str, language: Language):
         '''
         Arguments:
@@ -37,11 +41,17 @@ class Executor:
 
         self.task = task
         self.language = language
-        self.__save_path = None
-        self.__code = self.__full_response = None
-        self.__dependecies = None
-
+        self.__save_path: Path = None
+        self.__code: str = None
+        self.__full_response: str = None
+        self.__dependecies: list[str] = None
         self.__saved: bool = False
+
+        self.__commands_statuses = {}
+
+    @staticmethod
+    def setDefaultOutStream(outstream: StringIO):
+        Executor.__default_outstream = outstream
 
     @property
     def path(self) -> Path:
@@ -186,16 +196,37 @@ class Executor:
             f.write(self.__code)
             self.__saved = True
 
-    def install_dependecies(self):
+    def install_dependecies(self) -> Generator[str, bool|None, ...]:
+        '''Tries to install dependencies and yields the commands that was executed and status (sucess=true)'''
+
         for command in self.__dependecies:
             if not command:
                 continue
 
+            yield command
+
             try:
                 logger.info('RUNNING ' + command)
-                subprocess.run(command.split(), check=False)
+                self.__run_command(command)
+                yield True
             except:
                 logger.opt(exception=True).error(f"Failed to execute {command}")
+                yield False
+
+    def __run_command(self, command: str):
+        process = None 
+
+        try:
+            process = subprocess.run(command.split(), check=False, 
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True)
+        except:
+            raise
+        finally:
+            if Executor.__default_outstream and process:
+                Executor.__default_outstream.write(process.stdout)      
+
+    def command_status(self, command: str) -> bool|None:
+        return None if command not in self.__commands_statuses else self.__commands_statuses[command]
 
     def build_program(self):
         prog_path = ''
@@ -214,7 +245,7 @@ class Executor:
 
             try:
                 logger.info('COMPILING...')
-                subprocess.run(compille_command[self.language].split(), check=False)
+                self.__run_command(compille_command[self.language])
             except:
                 logger.opt(exception=True).error(f"Failed to compile {self.language} {prog_path}")
                 raise exc.CantCompileProgram()
@@ -231,7 +262,7 @@ class Executor:
 
         try:
             logger.info('EXECUTING ' + str(self.__save_path))
-            subprocess.run(execute_command.split(), check=False)
+            self.__run_command(execute_command)
         except:
             logger.opt(exception=True).error(f"Failed to execute {self.__save_path}")
             raise exc.CantRunProgram()

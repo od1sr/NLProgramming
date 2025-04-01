@@ -9,7 +9,7 @@ from src.outputHandler import OutputHandler
 import os, sys
 import uuid
 from loguru import logger
-
+import subprocess
 from src.frontend.ui_elements import *
 
 COLORS = {
@@ -176,20 +176,22 @@ def main(page: ft.Page):
 
                 if carts[cart_id].language == Language.PYTHON:
                     if carts[cart_id].dependecies:
-                        for lib in carts[cart_id].dependecies:
-                            building_text.value += 'Выполнение команды: ' + lib + '...\n'
+                        commands = carts[cart_id].install_dependecies()
+
+                        for lib_install_command in commands:
+                            building_text.value += 'Выполнение команды: ' + lib_install_command + '...\n'
+                            
                             page.update()
-                            try:
-                                os.system(lib)
+
+                            if commands.__next__(): # status
                                 building_text.value += '[ Успешно ]\n\n'
-                                page.update()
-                            except:
+                            else:
                                 building_text.value += '[ Ошибка ]\n'
-                                warning.value = 'Ошибка при установке библиотеки: ' + lib
+                                warning.value = 'Ошибка при установке библиотеки: ' + lib_install_command
                                 warning.visible = True
                                 warning_obj.visible = True
-                                page.update()
-                                return
+
+                            page.update()
 
                 carts[cart_id].save_code(selected_path)
                 building_text.value += 'Код сохранён в: ' + selected_path + '\n'
@@ -395,7 +397,9 @@ def main(page: ft.Page):
     console.controls.append(ft.Text('Консоль', color=COLORS["pastel_terminal_text"]))
 
     out = OutputHandler(console, page)
+    sys.stdout = sys.stderr = out
     logger.add(out)
+    Executor.setDefaultOutStream(out)
     logger.info('Console configured!!!')
     
 
