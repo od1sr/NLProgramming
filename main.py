@@ -11,6 +11,24 @@ import uuid
 from loguru import logger
 
 from src.frontend.ui_elements import *
+from src.frontend.settings import REMOTE_SERVER
+
+import socket
+
+
+INTERNET_CONECTED = False
+def is_connected(hostname):
+    try:
+        # See if we can resolve the host name - tells us if there is
+        # A DNS listening
+        host = socket.gethostbyname(hostname)
+        # Connect to the host - tells us if the host is actually reachable
+        s = socket.create_connection((host, 80), 2)
+        s.close()
+        return True
+    except Exception:
+        pass # We ignore any errors, returning False
+    return False
 
 
 
@@ -252,7 +270,12 @@ def main(page: ft.Page):
             on_click=lambda _: save_path_picker.get_directory_path(),
             visible=False
         )
-        md = ft.Markdown()
+
+
+        
+
+
+       
 
         cntr = ft.Container(
             content=ft.Column([
@@ -262,7 +285,6 @@ def main(page: ft.Page):
                 you_text,
                 ft.Divider(height=1, color=COLORS["accent"]),
                 code_content,
-                md,
                 libs_content,
                 ft.Row([
                     run_button,
@@ -333,6 +355,9 @@ def main(page: ft.Page):
         except exceptions.NetworkError:
             error_handled = True
             warning.value = "Отсуствует подключение к сети."
+        except exceptions.CantGetResponseFromAI:
+            error_handled = True
+            warning.value = "Не удалось получить данный с серврера."
 
         if error_handled:
             warning_obj.visible = True
@@ -352,6 +377,28 @@ def main(page: ft.Page):
         if input_text.value.strip():
             create_message_card(input_text, messages_column.controls, language_select_drop_box)
             page.update()
+
+    internet_connection = ft.IconButton(
+        icon=ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4
+    )
+    internet_connection.disable = True
+
+    def check_internet_connection(page, internet_c):
+        global INTERNET_CONECTED
+        while True:
+            sleep(2)
+            INTERNET_CONECTED = is_connected(REMOTE_SERVER)
+            if not INTERNET_CONECTED:
+                internet_c.icon = ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4
+                internet_c.tooltype = "Не в сети"
+            else:
+                internet_c.icon = ft.Icons.SIGNAL_WIFI_4_BAR
+                internet_c.tooltype = "В сети"
+            page.update()
+            
+
+
+    Thread(target=check_internet_connection, args=[page, internet_connection]).start()
 
     input_text = ft.TextField(
         hint_text="Введите запрос...",
@@ -461,6 +508,7 @@ def main(page: ft.Page):
         ft.Stack(
             [
                 ft.Column([
+                    internet_connection,
                     ft.Container(
                         content=messages_column,
                         expand=True,

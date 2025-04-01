@@ -12,3 +12,5 @@ COLORS = {
     "pastel_terminal": "#1D2B3C",
     "pastel_terminal_text": "#E5E8EB"
 }
+
+REMOTE_SERVER = "one.one.one.one"
