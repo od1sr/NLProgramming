@@ -536,7 +536,7 @@ def main(page: ft.Page):
         content=ft.Column([
             ft.Row([
                 resize_handle,
-                ft.Text("Логи", color=COLORS["pastel_terminal_text"], offset=[0.5, 0], size=18),
+                ft.Text("Логи", color=ft.Colors.WHITE, offset=[0.5, 0], size=18),
                 ft.Container(expand=True),
                 console_toggle_button,
             ], spacing=0),
