@@ -72,8 +72,7 @@ def main(page: ft.Page):
 
         # Conent box for code
         code_content = ft.Text(
-            size=14,
-            
+            size=14
         )
         
         # Content box for libs
@@ -142,11 +141,24 @@ def main(page: ft.Page):
         )
 
         def delete_card(e):
-            messages_column.controls.remove(cntr)
-            del carts[cart_id]
-            if not messages_column.controls:
-                messages_column.controls.append(no_cards_text)
+            # Анимация свайпа вправо
+            cntr.animate_offset = ft.animation.Animation(300, ft.animation.AnimationCurve.EASE_OUT)
+            cntr.offset = ft.transform.Offset(1.5, 0)  # Сдвигаем карточку вправо за пределы экрана
+            
+            # Обновляем страницу чтобы увидеть анимацию
             page.update()
+            
+            # Ждем завершения анимации перед удалением
+            def delayed_remove():
+                sleep(0.3)  # Ждем завершения анимации
+                messages_column.controls.remove(cntr)
+                del carts[cart_id]
+                if not messages_column.controls:
+                    messages_column.controls.append(no_cards_text)
+                page.update()
+            
+            # Запускаем удаление в отдельном потоке
+            Thread(target=delayed_remove).start()
 
         delete_button = ft.IconButton(
             icon=ft.icons.DELETE_FOREVER_ROUNDED,
@@ -293,6 +305,8 @@ def main(page: ft.Page):
             border_radius=10,
             border=ft.border.all(1, COLORS["accent"]),
             shadow=ft.BoxShadow(blur_radius=5, color=ft.colors.BLACK12),
+            offset=ft.transform.Offset(0, 0),  # Добавляем начальное положение
+            animate_offset=ft.animation.Animation(300, ft.animation.AnimationCurve.ELASTIC_IN),  # Добавляем анимацию
         )
         mc.append(cntr)
 
