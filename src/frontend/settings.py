@@ -14,6 +14,6 @@ COLORS = {
     "pastel_green": "#B5EAD7",  # Мягкий пастельный
     "vivid_green": "#5CDB95",   # Яркий зелёный (как малахит)
     "vivid_red": "#FF6B6B",     # Яркий красный (теплый и насыщенный)
+    "code_background_light": "#F7F9FC",  # Светлый фон для кода
 }
-
 REMOTE_SERVER = "one.one.one.one"

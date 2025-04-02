@@ -48,13 +48,13 @@ def highlight_python_code(code):
 
 def get_color_for_span(name):
     colors = {
-        'keyword': 'blue',
-        'string': 'green',
-        'comment': 'gray',
-        'number': 'purple',
-        'builtin': 'orange'
+        'keyword': '#0066CC',    # primary
+        'string': '#008000',     # vivid_green
+        'comment': '#808080',    # text_muted
+        'number': '#B8860B',     # highlight
+        'builtin': '#8B0000'     # secondary
     }
-    return colors.get(name, 'black')
+    return colors.get(name, '#FFFFFF')
 
 
 if __name__ == "__main__":

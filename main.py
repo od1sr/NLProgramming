@@ -116,6 +116,7 @@ def main(page: ft.Page):
         # Conent box for code
         code_content = ft.Text(
             size=14,
+            
         )
         
         
@@ -293,8 +294,8 @@ def main(page: ft.Page):
         )
 
 
-        
-
+        code_conatiner = ft.Container(code_content, bgcolor=COLORS["code_background_light"], expand=True, border_radius=10, border=ft.border.all(1, COLORS["accent"]), padding=10)
+        code_conatiner.visible = False
 
        
 
@@ -305,7 +306,7 @@ def main(page: ft.Page):
                 ft.Divider(height=1, color=COLORS["accent"]),
                 you_text,
                 ft.Divider(height=1, color=COLORS["accent"]),
-                ft.Container(code_content),
+                code_conatiner,
                 libs_content,
                 ft.Row([
                     run_button,
@@ -349,6 +350,8 @@ def main(page: ft.Page):
             generate_text.visible = False
             code_content.visible = True
             spans = highlight_python_code(carts[cart_id].code)
+            code_content.visible = True
+            
             for i in range(len(spans)):
                 sleep(uniform(0, 0.05))
                 code_content.spans.append(spans[i])
