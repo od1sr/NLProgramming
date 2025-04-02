@@ -144,7 +144,8 @@ def main(page: ft.Page):
             # Анимация свайпа вправо
             cntr.animate_offset = ft.animation.Animation(300, ft.animation.AnimationCurve.EASE_OUT)
             cntr.offset = ft.transform.Offset(1.5, 0)  # Сдвигаем карточку вправо за пределы экрана
-            
+            cntr.animate_opacity = 100
+            cntr.opacity = 0
             # Обновляем страницу чтобы увидеть анимацию
             page.update()
             
@@ -305,10 +306,25 @@ def main(page: ft.Page):
             border_radius=10,
             border=ft.border.all(1, COLORS["accent"]),
             shadow=ft.BoxShadow(blur_radius=5, color=ft.colors.BLACK12),
-            offset=ft.transform.Offset(0, 0),  # Добавляем начальное положение
-            animate_offset=ft.animation.Animation(300, ft.animation.AnimationCurve.ELASTIC_IN),  # Добавляем анимацию
+
+            opacity=0,
+            offset=ft.transform.Offset(-0.3, 0),  # Добавляем начальное положение
+            animate_offset=300,
+            animate_opacity=300
         )
         mc.append(cntr)
+        page.update()
+
+
+        def animate_in():
+
+            sleep(0.1)
+            cntr.animate_opacity = 300
+            cntr.opacity = 1
+            cntr.offset = ft.transform.Offset(0, 0)
+            page.update()
+        
+        Thread(target=animate_in).start()
 
         error_handled = False
         generate_flag = False
@@ -556,12 +572,6 @@ def main(page: ft.Page):
         bottom=1,
     )
 
-    
-
-    
-
-
-    
 
     def handle_resize(e):
         # Минимальная и максимальная ширина консоли
