@@ -383,9 +383,13 @@ def main(page: ft.Page):
 
     internet_connection = ft.IconButton(
         icon=ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4,
-        bgcolor = COLORS["pastel_red"],
-        icon_color = COLORS["vivid_red"]
-    )
+        
+        bgcolor=COLORS["pastel_red"],
+        icon_color=COLORS["vivid_red"],
+        tooltip="Статус подключения к интернету",
+        scale=0.8,
+
+    )    
     internet_connection.disable = True
 
 
@@ -445,7 +449,7 @@ def main(page: ft.Page):
     sys.stdout = sys.stderr = out
     logger.add(out)
     Executor.setDefaultOutStream(out)
-    logger.info('Console configured!!!')
+    logger.info('Console inited.')
 
     def close_console():
         nonlocal IS_CONSOLE_VISIBLE
@@ -513,12 +517,13 @@ def main(page: ft.Page):
     )
 
     console_open_button = ft.TextButton(
-        "Консоль",
+        "Логи",
         on_click=toggle_console,
         style=ft.ButtonStyle(
             shape=ft.RoundedRectangleBorder(radius=10),
             bgcolor=COLORS["pastel_terminal"],
             padding=12,
+            color=ft.colors.WHITE,
         ),
         icon=ft.Icons.TERMINAL,
         icon_color=COLORS["pastel_terminal_text"],
@@ -531,7 +536,7 @@ def main(page: ft.Page):
         content=ft.Column([
             ft.Row([
                 resize_handle,
-                ft.Text("Консоль", color=COLORS["pastel_terminal_text"], offset=[0.5, 0], size=18),
+                ft.Text("Логи", color=COLORS["pastel_terminal_text"], offset=[0.5, 0], size=18),
                 ft.Container(expand=True),
                 console_toggle_button,
             ], spacing=0),
