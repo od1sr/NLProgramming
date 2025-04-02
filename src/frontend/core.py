@@ -372,6 +372,7 @@ def main(page: ft.Page):
             generate_text.visible = False
             delete_button.icon_color = COLORS["pastel_red"]
             delete_button.disabled = False
+            open_console()
         
         input_text.disabled = False
 
@@ -457,6 +458,21 @@ def main(page: ft.Page):
             console_container.offset = ft.transform.Offset(1.1, 0)
             console_toggle_button.icon = ft.Icons.CHEVRON_RIGHT
         
+        page.update()
+
+    def open_console():
+        nonlocal IS_CONSOLE_VISIBLE
+        IS_CONSOLE_VISIBLE = True
+
+        if IS_CONSOLE_VISIBLE:
+            console_container.offset = ft.transform.Offset(0, 0)
+            console_open_button.offset = ft.transform.Offset(1.5, 0)
+            console_toggle_button.icon = ft.Icons.CHEVRON_RIGHT
+        else:
+            console_container.offset = ft.transform.Offset(1.1, 0)
+            console_open_button.offset = ft.transform.Offset(0, 0)
+            console_toggle_button.icon = ft.Icons.CHEVRON_LEFT
+
         page.update()
 
 
