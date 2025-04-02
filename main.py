@@ -1,23 +1,27 @@
+
+
+from src.frontend.highlighter import highlight_python_code
+from src.frontend.settings import REMOTE_SERVER
+from src.outputHandler import OutputHandler
+from src.frontend.ui_elements import *
 from src.executor import Executor
 from src.config import Language
 from threading import Thread
 from random import uniform
 from src import exceptions
+from loguru import logger
 from time import sleep
 import flet as ft
-from src.outputHandler import OutputHandler
-import os, sys
-import uuid
-from loguru import logger
 import subprocess
-from src.frontend.ui_elements import *
-from src.frontend.settings import REMOTE_SERVER
-from src.frontend.highlighter import highlight_python_code
-
+import os, sys
 import socket
+import uuid
 
 
-INTERNET_CONECTED = False
+
+'''
+    Function for checking internet connection
+'''
 def is_connected(hostname):
     try:
         # See if we can resolve the host name - tells us if there is
@@ -32,8 +36,9 @@ def is_connected(hostname):
     return False
 
 
-
-wait_timer = 0
+'''
+    Function for culdowning input box
+'''
 def wait_timer_start(page: ft.Page, input_button: ft.IconButton, timer_text):
     global wait_timer
     wait_timer = 10
@@ -57,22 +62,29 @@ def wait_timer_start(page: ft.Page, input_button: ft.IconButton, timer_text):
 generate_flag = False
 generate_errored = False
 
+'''
+    Function for server response timer
+'''
 def start_generate_timer(page: ft.Page, timer_text):
-    global generate_timer
     generate_timer = 0
     timer_text.value = f'{generate_timer}s'
     page.update()
+
     while not generate_flag:
         sleep(1)
         generate_timer += 1
         timer_text.value = f'{generate_timer}s'
         page.update()
+
     timer_text.value = f'Время ожидания: {generate_timer}s'
     timer_text.color = COLORS["text_muted"]
-    if generate_errored:
-        timer_text.color = COLORS["pastel_red"]
+    if generate_errored:  timer_text.color = COLORS["pastel_red"]
     page.update()
 
+
+'''
+    Main function
+'''
 def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.LIGHT
     page.title = "Текстовый чат"
@@ -82,13 +94,14 @@ def main(page: ft.Page):
     page.window_width = 800
     page.window_height = 600
 
+    
     IS_CONSOLE_VISIBLE = False
 
 
     carts: dict[str, Executor] = {}
 
     messages_column.controls.append(no_cards_text)
-
+    
     
     def create_message_card(input_text, mc, lang_drop_down):
         global generate_flag, generate_errored
@@ -338,7 +351,7 @@ def main(page: ft.Page):
             spans = highlight_python_code(carts[cart_id].code)
             for i in range(len(spans)):
                 sleep(uniform(0, 0.05))
-                code_content.spans.insert(-1, spans[i])
+                code_content.spans.append(spans[i])
                 
                 page.update()
                 messages_column.scroll_to(offset=messages_column.height, duration=3)
@@ -395,7 +408,7 @@ def main(page: ft.Page):
 
 
     def check_internet_connection(page, internet_c):
-        global INTERNET_CONECTED
+
         while True:
             sleep(2)
             INTERNET_CONECTED = is_connected(REMOTE_SERVER)
@@ -458,10 +471,10 @@ def main(page: ft.Page):
         
         if IS_CONSOLE_VISIBLE:
             console_container.offset = ft.transform.Offset(0, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
+            console_toggle_button.icon = ft.Icons.CHEVRON_LEFT
         else:
             console_container.offset = ft.transform.Offset(1.1, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
+            console_toggle_button.icon = ft.Icons.CHEVRON_RIGHT
         
         page.update()
 
@@ -473,7 +486,7 @@ def main(page: ft.Page):
         content=ft.Container(
             width=10,
             height=30,
-            bgcolor=ft.colors.with_opacity(0.5, COLORS["pastel_terminal_text"]),
+            bgcolor=ft.Colors.with_opacity(0.5, COLORS["pastel_terminal_text"]),
             border_radius=5,
         ),
     )
@@ -484,17 +497,17 @@ def main(page: ft.Page):
         
         if IS_CONSOLE_VISIBLE:
             console_container.offset = ft.transform.Offset(0, 0)
-            console_open_button.offset = ft.transdorm(-1.1, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_LEFT
+            console_open_button.offset = ft.transform.Offset(1.5, 0)
+            console_toggle_button.icon = ft.Icons.CHEVRON_RIGHT
         else:
             console_container.offset = ft.transform.Offset(1.1, 0)
-            console_open_button.offset = ft.transdorm(0, 0)
-            console_toggle_button.icon = ft.icons.CHEVRON_RIGHT
+            console_open_button.offset = ft.transform.Offset(0, 0)
+            console_toggle_button.icon = ft.Icons.CHEVRON_LEFT
         
         page.update()
 
     console_toggle_button = ft.IconButton(
-        icon=ft.icons.CHEVRON_LEFT,
+        icon=ft.Icons.CHEVRON_LEFT,
         icon_color=COLORS["pastel_terminal_text"],
         bgcolor=COLORS["pastel_terminal"],
         on_click=toggle_console,
@@ -505,12 +518,17 @@ def main(page: ft.Page):
     console_open_button = ft.TextButton(
         "Консоль",
         on_click=toggle_console,
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=14), bgcolor=COLORS['pastel_terminal'], text_style=ft.TextStyle(color=COLORS["accent"])),
+        style=ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=10),
+            bgcolor=COLORS["pastel_terminal"],
+            padding=12,
+        ),
+        icon=ft.Icons.TERMINAL,
+        icon_color=COLORS["pastel_terminal_text"],
         tooltip="Скрыть/Показать консоль",
         animate_offset=ft.Animation(200, "easeOutQuad"),
         offset=ft.transform.Offset(0, 0),
-    )
-    
+    )    
 
     console_container = ft.Container(
         content=ft.Column([
@@ -526,8 +544,8 @@ def main(page: ft.Page):
         expand=True,
         border_radius=15,
         border=ft.border.all(1.2, COLORS["accent"]),
-        bgcolor=COLORS["pastel_terminal"],
-        shadow=ft.BoxShadow(blur_radius=15, color=ft.colors.BLACK12),
+        bgcolor=ft.Colors.with_opacity(0.85, COLORS["pastel_terminal"]),
+        shadow=ft.BoxShadow(blur_radius=15, color=ft.Colors.BLACK12),
         padding=15,
         offset=ft.transform.Offset(0, 0),
         animate_offset=ft.Animation(200, "easeOutQuad"),
@@ -571,7 +589,7 @@ def main(page: ft.Page):
                         bgcolor=COLORS["surface"],
                         border=ft.border.all(1.2, COLORS["accent"]),
                         padding=15,
-                        shadow=ft.BoxShadow(blur_radius=15, color=ft.colors.BLACK12)
+                        shadow=ft.BoxShadow(blur_radius=15, color=ft.Colors.BLACK12)
                     ),
                     ft.Container(
                         content=ft.Row(
