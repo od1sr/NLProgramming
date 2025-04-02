@@ -4,12 +4,12 @@ import re
 def highlight_python_code(code):
     # Простые регулярные выражения для подсветки Python
     patterns = {
-        'keyword': r'\b(and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|self)\b',
+        'keyword': r'\b(and|as|assert|break|class|continue|def|del|elif|else|except|while|finally|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield|self)\b',
         'string': r'(\'[^\']*\'|"[^"]*")',
         'comment': r'#[^\n]*',
         'number': r'\b\d+\b',
-        'builtin': r'\b(print|len|range|str|int|float|list|dict|tuple|set|input)\b'
-    }
+        'builtin': r'\b(print|len|range|str|int|float|list|dict|tuple|set|input)\b',
+        'function_name': r'\b(?!if|for|while|elif\b)[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()'    }
     
     spans = []
     text = code
@@ -52,7 +52,8 @@ def get_color_for_span(name):
         'string': '#008000',     # vivid_green
         'comment': '#808080',    # text_muted
         'number': '#B8860B',     # highlight
-        'builtin': '#8B0000'     # secondary
+        'builtin': '#8B0000',    # secondary
+        "function_name": '#0000FF' # accent
     }
     return colors.get(name, '#FFFFFF')
 

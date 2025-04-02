@@ -51,16 +51,7 @@ language_select_drop_box.value = 'Python'
 
 
 
-# Content box for libs
-libs_content = ft.TextField(
-    label='Необходимые библиотеки:',
-    value='',
-    color=COLORS["text"],
-    text_size=14,
-    multiline=True,
-)
-libs_content.disabled = True
-libs_content.visible = False
+
 
 
 
