@@ -12,6 +12,7 @@ from random import uniform
 from src import exceptions
 from loguru import logger
 from time import sleep
+import pyperclip
 import flet as ft
 import subprocess
 import os, sys
@@ -74,6 +75,8 @@ def main(page: ft.Page):
         code_content = ft.Text(
             size=14
         )
+
+        code_text = ""
         
         # Content box for libs
         libs_content = ft.TextField(
@@ -276,6 +279,18 @@ def main(page: ft.Page):
         code_container = ft.Container(code_content, bgcolor=COLORS["code_background_light"], expand=True, border_radius=10, border=ft.border.all(1, COLORS["accent"]), padding=10)
         code_container.visible = False
 
+        def copy_code(e):
+            pyperclip.copy(code_text)
+            copy_button.tooltip = "Скопировано!"
+            copy_button.icon = ft.icons.CHECK
+            page.update()
+
+        copy_button = ft.IconButton(
+            icon=ft.icons.COPY_ALL,
+            on_click=copy_code,
+            tooltip="Копировать код в буфер обмена",
+            visible=False
+        )
        
 
         cntr = ft.Container(
@@ -291,6 +306,7 @@ def main(page: ft.Page):
                     run_button,
                     build_button,
                     python_build_button,
+                    copy_button,
                     warning_obj,
                     warning,
                     waiting_animation,
@@ -346,12 +362,13 @@ def main(page: ft.Page):
             generate_text.visible = False
             code_content.visible = True
             spans = highlight_python_code(carts[cart_id].code)
+            code_text = carts[cart_id].code
             code_container.visible = True
             for i in range(len(spans)):
                 code_content.spans.append(spans[i])
-                
                 page.update()
                 messages_column.scroll_to(offset=messages_column.height, duration=3)
+            copy_button.visible = True
             
 
             if carts[cart_id].language == Language.PYTHON:

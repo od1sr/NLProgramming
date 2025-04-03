@@ -4,26 +4,50 @@ import re
 def highlight_python_code(code):
     # Простые регулярные выражения для подсветки Python
     patterns = {
-        'keyword': r'\b(and|as|assert|break|class|continue|def|for|del|elif|else|except|while|finally|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|with|yield|self)\b',
         'string': r'(\'[^\']*\'|"[^"]*")',
         'comment': r'#[^\n]*',
+        'keyword': r'\b(and|as|assert|break|class|continue|def|for|del|elif|else|except|while|finally|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|with|yield|self)\b',
         'number': r'\b\d+\b',
         'builtin': r'\b(print|len|range|str|int|float|list|dict|tuple|set|input|abs|all|any|bin|bool|chr|complex|dir|divmod|enumerate|eval|exec|filter|format|frozenset|getattr|globals|hasattr|hash|hex|id|isinstance|issubclass|iter|locals|map|max|min|next|oct|open|ord|pow|property|reversed|round|slice|sorted|sum|super|type|vars|zip)\b',
-        'function_name': r'\b(?!(?:and|as|assert|break|class|continue|def|for|del|elif|else|except|while|finally|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|with|yield|self|print|len|range|str|int|float|list|dict|tuple|set|input)\b)[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()',    }
+        'function_name': r'\b(?!(?:and|as|assert|break|class|continue|def|for|del|elif|else|except|while|finally|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|with|yield|self|print|len|range|str|int|float|list|dict|tuple|set|input)\b)[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\()',
+        'constant': r'\b(True|False|None)\b'
+    }
     
     spans = []
     text = code
     
     # Создаем список всех совпадений
     all_matches = []
-    for name, pattern in patterns.items():
-        for match in re.finditer(pattern, text):
+    
+    # Сначала находим строки и комментарии
+    protected_regions = []
+    for name in ['string', 'comment']:
+        for match in re.finditer(patterns[name], text):
+            protected_regions.append((match.start(), match.end()))
             all_matches.append({
                 "from": match.start(),
                 "to": match.end(),
                 "name": name,
                 "text": text[match.start():match.end()]
             })
+    
+    # Затем ищем остальные паттерны, исключая защищенные регионы
+    for name, pattern in patterns.items():
+        if name not in ['string', 'comment']:
+            for match in re.finditer(pattern, text):
+                # Проверяем, не находится ли совпадение в защищенном регионе
+                is_protected = False
+                for start, end in protected_regions:
+                    if match.start() >= start and match.end() <= end:
+                        is_protected = True
+                        break
+                if not is_protected:
+                    all_matches.append({
+                        "from": match.start(),
+                        "to": match.end(),
+                        "name": name,
+                        "text": text[match.start():match.end()]
+                    })
     
     # Сортируем по позиции
     all_matches.sort(key=lambda x: x['from'])
@@ -35,10 +59,8 @@ def highlight_python_code(code):
         for existing in filtered_matches:
             if (match['from'] >= existing['from'] and match['from'] < existing['to']) or \
                (match['to'] > existing['from'] and match['to'] <= existing['to']):
-                # Если это комментарий, он имеет приоритет
-                if existing['name'] == 'comment':
-                    overlapping = True
-                    break
+                overlapping = True
+                break
         if not overlapping:
             filtered_matches.append(match)
     
@@ -70,7 +92,8 @@ def get_color_for_span(name):
         'comment': '#757575',    # gray
         'number': '#2962FF',     # blue
         'builtin': '#D50000',    # red
-        "function_name": '#3700B3' # deep purple
+        'function_name': '#3700B3', # deep purple
+        'constant': '#FF6D00'    # orange
     }
     return colors.get(name, '#FFFFFF')
 
