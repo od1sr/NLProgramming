@@ -29,12 +29,12 @@ class RequestsControlleer:
     def UpdateRequestsCount(self):
         info = json.load(open(self.cache_file, 'r'))
         info['this_day_requests'] -= 1
-        json.dump(info, open(self.cache_file, 'w'))
+        json.dump(info, open(self.cache_file, 'w'), indent=4)
 
     def SetRequestCount(self, count: int):
         info = json.load(open(self.cache_file, 'r'))
         info['this_day_requests'] = count
-        json.dump(info, open(self.cache_file, 'w'))
+        json.dump(info, open(self.cache_file, 'w'), indent=4)
 
     def GetRequestsCount(self):
         return json.load(open(self.cache_file, 'r'))['this_day_requests']
@@ -43,13 +43,13 @@ class RequestsControlleer:
         self.requests_data.append(request_data)
         info = json.load(open(self.cache_file, 'r'))
         info['requests'].append(request_data)
-        json.dump(info, open(self.cache_file, 'w'))
+        json.dump(info, open(self.cache_file, 'w'), indent=4)
 
     def SetEndTime(self):
         t = time.time()
         info = json.load(open(self.cache_file, 'r'))
         info['saved_time'] = t
-        json.dump(info, open(self.cache_file, 'w'))
+        json.dump(info, open(self.cache_file, 'w'), indent=4)
 
     def GetWaitedTime(self):
         saved_t = json.load(open(self.cache_file, 'r'))['saved_time']
