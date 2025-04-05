@@ -12,9 +12,6 @@ def show_loading_screen(page: ft.Page):
     page.bgcolor = COLORS["background"]
     page.window.center()
 
-
-    
-
     progress_bar = ft.ProgressBar(
         color=COLORS["text"],
         bgcolor=COLORS["text_muted"],
@@ -120,7 +117,7 @@ def show_loading_screen(page: ft.Page):
     progress = 0
     text_index = 0
     while progress < 10:
-        progress += random.uniform(0.0001, 0.1)
+        progress += random.uniform(0.0001, 0.5)
         if progress > 10:
             progress = 10
         progress_bar.value = progress / 10

@@ -18,6 +18,7 @@ timer_text = ft.TextField(
     fill_color=COLORS["accent"],
     border_radius=15,
     offset=(-0.9, 0.7),
+    tooltip='Отправка запроса заблокирована на 60 секунд.'
 )
 timer_text.disabled = True
 timer_text.visible = False

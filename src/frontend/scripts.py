@@ -23,10 +23,11 @@ def is_connected(hostname):
 '''
 def wait_timer_start(page: ft.Page, input_button: ft.IconButton, timer_text):
     global wait_timer
-    wait_timer = 10
+    wait_timer = 60
     input_button.disabled = True
     input_button.bgcolor = COLORS['accent']
     timer_text.visible = True
+    timer_text.color = COLORS["pastel_terminal"]
     page.update()
 
     while wait_timer > 0:

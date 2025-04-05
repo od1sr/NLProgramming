@@ -3,22 +3,21 @@
 from copy import copy
 from src.frontend.highlighter import highlight_python_code
 from src.frontend.settings import REMOTE_SERVER
-from src.frontend.scripts import *
+from src.frontend.scripts import *  # noqa: F403
 from src.request_control import RequestsControlleer, MAX_REQUEST_FOR_DAY
 from src.outputHandler import OutputHandler
-from src.frontend.ui_elements import *
+from src.frontend.ui_elements import *  # noqa: F403
 from src.executor import Executor
 from src.config import Language
 from threading import Thread
-from random import uniform
 
 from src import exceptions
 from loguru import logger
 from time import sleep
 import pyperclip
 import flet as ft
-import subprocess
-import os, sys
+import os
+import sys
 
 import uuid
 
@@ -395,6 +394,7 @@ def main(page: ft.Page):
 
             request_controller.AddRequest({
                 "prompt": text,
+                "language": carts[cart_id].language.name,
                 "code": carts[cart_id].code
             })
             request_controller.UpdateRequestsCount()
@@ -657,7 +657,7 @@ def main(page: ft.Page):
         console_container.width = new_width
         page.update()
 
-    if request_controller.GetWaitedTime() <= 0:
+    if request_controller.GetWaitedTime() < 0:
         request_controller.SetRequestCount(MAX_REQUEST_FOR_DAY)
         
     updated_request_count = request_controller.GetRequestsCount()

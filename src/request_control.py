@@ -11,10 +11,12 @@ def is_cache_file_created() -> bool:
 
 def create_cache_file() -> None:
     if not is_cache_file_created():
+        print("Creating cache file...")
         os.makedirs('c:/AI_assis', exist_ok=True)
         open(SETTINGS_FILE_PATH + "/cache.json", 'w').close()
         with open(SETTINGS_FILE_PATH + "/cache.json", 'w') as file:
-            json.dump({'this_day_requests': MAX_REQUEST_FOR_DAY, "saved_time": 0, "requests": []}, file)
+            json.dump({'this_day_requests': MAX_REQUEST_FOR_DAY, "saved_time": None, "requests": []}, file)
+
 class RequestsControlleer:
     def __init__(self, requests_cout_per_day: int = MAX_REQUEST_FOR_DAY,
                        settings_file_path: str = SETTINGS_FILE_PATH) -> None:
@@ -54,6 +56,8 @@ class RequestsControlleer:
     def GetWaitedTime(self):
         saved_t = json.load(open(self.cache_file, 'r'))['saved_time']
         at_t = time.time()
+        if saved_t is None:
+            return 0
         delta_time = at_t - saved_t
         return 12 - time.gmtime(delta_time).tm_hour 
 
