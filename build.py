@@ -53,7 +53,7 @@ else:
     print(f"{Fore.BLUE}[INFO] Building in release mode{Style.RESET_ALL}")
 
 print(f"{Fore.YELLOW}[BUILD] Running PyInstaller...{Style.RESET_ALL}")
-os.system(f'pyinstaller main.py --onefile {'--noconsole' if not DEBUG_MODE else ""}')
+os.system(f'pyinstaller main.py --onefile {'--noconsole' if not DEBUG_MODE else ""} -i "assets\logo.png"')
 
 # Move executable to current directory
 if os.path.exists('dist'):

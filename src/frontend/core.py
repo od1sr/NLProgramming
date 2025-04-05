@@ -48,12 +48,14 @@ def start_generate_timer(page: ft.Page, timer_text):
 '''
 def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.LIGHT
-    page.title = "Текстовый чат"
+    page.title = "AI-Assist"
     page.window.icon = ft.Icons.BUILD_CIRCLE_OUTLINED
     page.bgcolor = COLORS["background"]
     page.padding = 20
     page.window_width = 800
     page.window_height = 600
+    page.window.center()
+    
 
     
     IS_CONSOLE_VISIBLE = False
