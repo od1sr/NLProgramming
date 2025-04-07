@@ -7,18 +7,18 @@ messages_column = ft.ListView(expand=True, spacing=10, auto_scroll=True)
 
 # Timer text ===============================
 timer_text = ft.TextField(
-        '',
-        color=ft.Colors.WHITE,
-        text_size=12,
-        width=40,
-        height=20,
-        text_align=ft.TextAlign('right'),
-        border_width=0,
-        content_padding=3,
-        fill_color=COLORS["accent"],
-        border_radius=15,
-        offset=(-0.9, 0.7),
-    )
+    '',
+    color=ft.Colors.WHITE,
+    text_size=12,
+    width=40,
+    height=20,
+    text_align=ft.TextAlign('right'),
+    border_width=0,
+    content_padding=3,
+    fill_color=COLORS["accent"],
+    border_radius=15,
+    offset=(-0.9, 0.7),
+)
 timer_text.disabled = True
 timer_text.visible = False
 
@@ -39,7 +39,7 @@ language_select_drop_box = ft.Dropdown(
     options=[
         ft.dropdown.Option('Python'),
         ft.dropdown.Option('C++'),
-        ft.dropdown.Option('JavaScript')
+    #    ft.dropdown.Option('JavaScript')
     ], 
     width=120,
     border_radius=15,

@@ -1,14 +1,17 @@
 
 
+from copy import copy
 from src.frontend.highlighter import highlight_python_code
 from src.frontend.settings import REMOTE_SERVER
 from src.frontend.scripts import *
+from src.request_control import RequestsControlleer, MAX_REQUEST_FOR_DAY
 from src.outputHandler import OutputHandler
 from src.frontend.ui_elements import *
 from src.executor import Executor
 from src.config import Language
 from threading import Thread
 from random import uniform
+
 from src import exceptions
 from loguru import logger
 from time import sleep
@@ -20,7 +23,7 @@ import os, sys
 import uuid
 
 
-
+request_controller = RequestsControlleer()
 
 generate_flag = False
 generate_errored = False
@@ -35,7 +38,7 @@ def start_generate_timer(page: ft.Page, timer_text):
         timer_text.value = f'{generate_timer}s'
         page.update()
 
-    timer_text.value = f'Время ожидания: {generate_timer}s'
+    timer_text.value = f'Время ожидания: {generate_timer}с'
     timer_text.color = COLORS["text_muted"]
     if generate_errored:  timer_text.color = COLORS["pastel_red"]
     page.update()
@@ -129,6 +132,9 @@ def main(page: ft.Page):
 
         waiting_animation = ft.ProgressRing(width=18, height=18, stroke_width=3, color=COLORS["primary"])
         waiting_animation.visible = False
+
+        waiting_animation_line = ft.ProgressBar(color=COLORS["accent"], height=2, bgcolor="#eeeeee")
+        waiting_animation_line.visible = False
 
         generate_text = ft.Text(
             'Генерация',
@@ -314,7 +320,8 @@ def main(page: ft.Page):
                     ft.Container(expand=True),
                     generate_timer_text
                 ], spacing=9, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                building_text
+                building_text,
+                waiting_animation_line
             ], spacing=8),
             padding=15,
             margin=ft.margin.only(bottom=10),
@@ -350,6 +357,7 @@ def main(page: ft.Page):
 
         try:
             waiting_animation.visible = True
+            waiting_animation_line.visible = True
             generate_text.visible = True
             delete_button.disabled = True
             delete_button.icon_color = COLORS["text_muted"]
@@ -359,9 +367,10 @@ def main(page: ft.Page):
             delete_button.disabled = False
             generate_flag = True
             waiting_animation.visible = False
+            waiting_animation_line.visible = False
             generate_text.visible = False
             code_content.visible = True
-            spans = highlight_python_code(carts[cart_id].code)
+            spans = highlight_python_code(copy(carts[cart_id].code))
             code_text = carts[cart_id].code
             code_container.visible = True
             for i in range(len(spans)):
@@ -380,6 +389,24 @@ def main(page: ft.Page):
 
             run_button.visible = True
             build_button.visible = True
+
+
+            request_controller.AddRequest({
+                "prompt": text,
+                "code": carts[cart_id].code
+            })
+            request_controller.UpdateRequestsCount()
+            updated_request_count = request_controller.GetRequestsCount()
+            if updated_request_count == 0:
+                request_count_text.color = COLORS["pastel_red"]
+            elif updated_request_count <= 10:
+                request_count_text.color = COLORS["pastel_yellow"]
+            else:
+                request_count_text.color = COLORS["text_muted"]
+            request_count_text.value = f"{updated_request_count} / {MAX_REQUEST_FOR_DAY}"
+            if request_controller.GetRequestsCount() == 0:
+                request_controller.SetEndTime()
+            
 
         except exceptions.CantExtractCode:
             warning.value = "Не удалось получить данные кода."
@@ -402,6 +429,7 @@ def main(page: ft.Page):
             generate_errored = True
             generate_flag = True
             waiting_animation.visible = False
+            waiting_animation_line.visible = False
             generate_text.visible = False
             delete_button.icon_color = COLORS["pastel_red"]
             delete_button.disabled = False
@@ -409,10 +437,35 @@ def main(page: ft.Page):
         
         input_text.disabled = False
 
+    
+
+    action_button_style = ft.ButtonStyle(color=ft.Colors.BLUE)
+    def close_banner(e):
+        page.close(banner)
+    banner_text = ft.Text(
+        value='',
+        color=ft.Colors.BLACK,
+    )
+    banner = ft.Banner(
+        bgcolor=COLORS["surface"],
+        leading=ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=COLORS["pastel_red"], size=40),
+        content=banner_text,
+        actions=[
+            ft.TextButton(text="Закрыть", style=action_button_style, on_click=close_banner),
+        ],
+    )
+
+    
+
     def send_message(e):
-        if input_text.value.strip():
-            create_message_card(input_text, messages_column.controls, language_select_drop_box)
-            page.update()
+        requests_count = request_controller.GetRequestsCount()
+        if requests_count > 0:
+            if input_text.value.strip():
+                create_message_card(input_text, messages_column.controls, language_select_drop_box)
+                page.update()
+        else:
+            banner_text.value = f"Вы создали максимальное количество карточек запросов, предоставленных вам на день. Вы сможете создавать новые карточки через '{request_controller.GetWaitedTime()}ч'"
+            page.open(banner)
 
     internet_connection = ft.IconButton(
         icon=ft.Icons.SIGNAL_WIFI_CONNECTED_NO_INTERNET_4,
@@ -602,12 +655,44 @@ def main(page: ft.Page):
         console_container.width = new_width
         page.update()
 
+    if request_controller.GetWaitedTime() <= 0:
+        request_controller.SetRequestCount(MAX_REQUEST_FOR_DAY)
+        
+    updated_request_count = request_controller.GetRequestsCount()
+    
+
+    request_count_text = ft.Text(
+        f"{updated_request_count} / {MAX_REQUEST_FOR_DAY}",
+        color=COLORS["text_muted"],
+        size=12,
+        weight=ft.FontWeight.BOLD,
+    )
+
+    if updated_request_count == 0:
+        request_count_text.color = COLORS["pastel_red"]
+    elif updated_request_count <= 10:
+        request_count_text.color = COLORS["pastel_yellow"]
+    else:
+        request_count_text.color = COLORS["text_muted"]
+
+    
+    request_count_text_container = ft.Container(
+        ft.Row([ft.Text('Доступно запросов:', color=COLORS["text_muted"], size=12,
+        weight=ft.FontWeight.BOLD), request_count_text]),
+        bgcolor=COLORS["surface"],
+        padding=10,
+        border_radius=15,
+        shadow=ft.BoxShadow(blur_radius=15, color=ft.Colors.BLACK12),
+        border=ft.border.all(1.2, COLORS["accent"]),
+    )
+
     page.add(
         ft.Stack(
             [
                 ft.Column([
                     ft.Row([
                         internet_connection, 
+                        request_count_text_container,
                         ft.Container(expand=True),
                         console_open_button
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
