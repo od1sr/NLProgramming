@@ -169,7 +169,7 @@ def main(page: ft.Page):
                 page.update()
             
             # Запускаем удаление в отдельном потоке
-            Thread(target=delayed_remove).start()
+            Thread(target=delayed_remove, daemon=True).start()
 
         delete_button = ft.IconButton(
             icon=ft.icons.DELETE_FOREVER_ROUNDED,
@@ -348,13 +348,13 @@ def main(page: ft.Page):
             cntr.offset = ft.transform.Offset(0, 0)
             page.update()
         
-        Thread(target=animate_in).start()
+        Thread(target=animate_in, daemon=True).start()
 
         error_handled = False
         generate_flag = False
         generate_errored = False
-        Thread(target=wait_timer_start, args=[page, send_button, timer_text]).start()
-        Thread(target=start_generate_timer, args=[page, generate_timer_text]).start()
+        Thread(target=wait_timer_start, args=[page, send_button, timer_text], daemon=True).start()
+        Thread(target=start_generate_timer, args=[page, generate_timer_text], daemon=True).start()
 
         try:
             waiting_animation.visible = True
@@ -498,10 +498,8 @@ def main(page: ft.Page):
                 internet_c.icon_color = COLORS["vivid_green"]
                 internet_c.bgcolor = COLORS['pastel_green']
             page.update()
-            
 
-
-    Thread(target=check_internet_connection, args=[page, internet_connection]).start()
+    Thread(target=check_internet_connection, args=[page, internet_connection], daemon=True).start()
 
     input_text = ft.TextField(
         hint_text="Введите запрос...",

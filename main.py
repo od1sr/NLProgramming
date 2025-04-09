@@ -5,12 +5,13 @@ from time import sleep
 import random
 
 def show_loading_screen(page: ft.Page):
+    page.window.center()
     page.window.width = 600
     page.window.height = 350
     page.window.resizable = False
     page.window.title_bar_hidden = True
     page.bgcolor = COLORS["background"]
-    page.window.center()
+    
 
     progress_bar = ft.ProgressBar(
         color=COLORS["text"],
